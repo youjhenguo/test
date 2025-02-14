@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets AJAX</title>
+</head>
+<body>
+    <img src="https://drive.google.com/file/d/1b3o5tO_PnCcBTALINAv0z9L7g9M7CDSo/view?usp=drive_link">
+    <h1>從 Google Sheets 獲取犬舍資料</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Feature</th>
+                <th>Description</th>
+                <th>Image</th>
+            </tr>
+        </thead>
+        <tbody id="sheet-data">
+            <tr><td colspan="5">資料載入中...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        const apiKey = "AIzaSyCqDKqYS0HqsC9V4I2A7J5JR7Y_RykODRE";  
+        const sheetId = "1drAE6CRuyjKvWqrfxnG1Lpo1O1c8MwsACzPmDIa9C7s";  
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A2:E?key=${apiKey}`;
+
+        async function fetchSheetData() {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error("無法取得資料");
+                
+                const data = await response.json();
+                const rows = data.values;
+
+                if (!rows || rows.length === 0) {
+                    document.getElementById("sheet-data").innerHTML = "<tr><td colspan='5'>無資料可顯示</td></tr>";
+                    return;
+                }
+
+                let html = "";
+                rows.forEach(row => {
+                    let name = row[0] || "無名稱";
+                    let gender = row[1] || "未知";
+                    let feature = row[2] || "無特徵描述";
+                    let description = row[3] || "無描述";
+                    let imgSrc = row[4] ? getDriveImgSrc(row[4]) : "";
+
+                    html += `
+                        <tr>
+                            <td>${name}</td>
+                            <td>${gender}</td>
+                            <td>${feature}</td>
+                            <td>${description}</td>
+                            <td>${imgSrc ? `<img src="${imgSrc}" alt="${name}">` : "無圖片"}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById("sheet-data").innerHTML = html;
+
+            } catch (error) {
+                console.error("錯誤:", error);
+                document.getElementById("sheet-data").innerHTML = `<tr><td colspan='5'>載入失敗: ${error.message}</td></tr>`;
+            }
+        }
+
+        function getDriveImgSrc(url) {
+            const match = url.match(/id=([a-zA-Z0-9_-]{33})/);
+            return match ? `https://drive.google.com/uc?export=view&id=${match[1]}` : url;
+        }
+
+        fetchSheetData();
+    </script>
+</body>
+</html>
